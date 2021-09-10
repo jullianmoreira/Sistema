@@ -13,6 +13,9 @@ type
     FProduto_Codigo: Integer;
     FData_Criacao: TDateTime;
     FData_Entrega: TDateTime;
+    FQuantidade: Extended;
+    FValor_Unitario: Extended;
+    FValor_Total: Extended;
 
   published
     property Codigo: Integer read FCodigo write FCodigo;
@@ -20,6 +23,9 @@ type
     property Produto_Codigo: Integer read FProduto_Codigo write FProduto_Codigo;
     property Data_Criacao: TDateTime read FData_Criacao write FData_Criacao;
     property Data_Entrega: TDateTime read FData_Entrega write FData_Entrega;
+    property Quantidade: Extended read FQuantidade write FQuantidade;
+    property Valor_Unitario: Extended read FValor_Unitario write FValor_Unitario;
+    property Valor_Total: Extended read FValor_Total write FValor_Total;
   end;
 
   TItemPedidoRepositorio = class(TObject)

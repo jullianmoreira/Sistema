@@ -12,15 +12,13 @@ type
     FCliente_Codigo: Integer;
     FData_Criacao: TDateTime;
     FData_Fechamento: TDateTime;
-    FExcluido: Boolean;
-    FData_Exclusao: TDateTime;
+    FValor_Total: Extended;
   published
     property Codigo: Integer read FCodigo write FCodigo;
     property Cliente_Codigo: Integer read FCliente_Codigo write FCliente_Codigo;
     property Data_Criacao: TDateTime read FData_Criacao write FData_Criacao;
+    property Valor_Total: Extended read FValor_Total write FValor_Total;
     property Data_Fechamento: TDateTime read FData_Fechamento write FData_Fechamento;
-    property Excluido: Boolean read FExcluido write FExcluido;
-    property Data_Exclusao: TDateTime read FData_Exclusao write FData_Exclusao;
   end;
 
   TPedidoRepositorio = class(TObject)

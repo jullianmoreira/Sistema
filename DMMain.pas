@@ -185,8 +185,7 @@ begin
         CommandText.Add('	cliente_codigo BIGINT NOT NULL,');
         CommandText.Add('	data_criacao TIMESTAMP DEFAULT now() NOT NULL,');
         CommandText.Add('	data_fechamento TIMESTAMP NULL,');
-        CommandText.Add('	excluido varchar(1) DEFAULT ''N'' NOT NULL,');
-        CommandText.Add('	data_exclusao TIMESTAMP NULL,');
+        CommandText.Add('	vlr_total DOUBLE DEFAULT 0 NULL,');
         CommandText.Add('	CONSTRAINT pedido_pk PRIMARY KEY (codigo),');
         CommandText.Add('	CONSTRAINT pedido_fk FOREIGN KEY (cliente_codigo) REFERENCES pedidos.cliente(codigo)');
         CommandText.Add(')');
@@ -301,8 +300,9 @@ begin
         CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
         CommandText.Add('	pedido_codigo BIGINT NOT NULL,');
         CommandText.Add('	produto_codigo BIGINT NOT NULL,');
-        CommandText.Add('	qtde DOUBLE DEFAULT 1 NOT NULL,');
-        CommandText.Add('	vlr DOUBLE DEFAULT 0 NOT NULL,');
+        CommandText.Add('	quantidade DOUBLE DEFAULT 1 NOT NULL,');
+        CommandText.Add('	valor_unitario DOUBLE DEFAULT 0 NOT NULL,');
+        CommandText.Add('	valor_total DOUBLE DEFAULT 0 NOT NULL,');
         CommandText.Add('	data_cadastro TIMESTAMP DEFAULT now() NOT NULL,');
         CommandText.Add('	data_entrega TIMESTAMP NULL,');
         CommandText.Add('	CONSTRAINT itempedido_pk PRIMARY KEY (codigo),');

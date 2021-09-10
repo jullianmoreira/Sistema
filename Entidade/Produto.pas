@@ -3,7 +3,7 @@
 unit Produto;
 
 interface
-uses System.Classes, System.SysUtils, System.Math;
+uses System.Classes, System.SysUtils, System.Math, Data.DB;
 
 type
   TProduto = class(TObject)
@@ -18,6 +18,11 @@ type
   public
     constructor Criar(_Codigo : Integer = -1; _Nome : String = ''; _ValorVenda : Extended = 0);
     function ValorParaBanco : String;
+  end;
+
+  TProdutoRepositorio = class(TObject)
+    public
+      function listarProduto(condicoes : TStringList) : TDataSet;
   end;
 
 implementation

@@ -3,7 +3,7 @@
 unit Cliente;
 
 interface
-uses System.Classes, System.SysUtils, System.Math;
+uses System.Classes, System.SysUtils, System.Math, Data.DB;
 
 type
   TCliente = class(TObject)
@@ -23,6 +23,11 @@ type
 
   end;
 
+  TClienteRepositorio = class(TObject)
+    public
+      function listarCliente(condicoes : TStringList) : TDataSet;
+  end;
+
 implementation
 
 { TCliente }
@@ -35,6 +40,13 @@ begin
   Self.Nome := _Nome;
   Self.Cidade := _Cidade;
   Self.UF := _UF;
+end;
+
+{ TClienteRepositorio }
+
+function TClienteRepositorio.listarCliente(condicoes: TStringList): TDataSet;
+begin
+
 end;
 
 end.

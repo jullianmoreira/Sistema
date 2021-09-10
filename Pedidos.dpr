@@ -10,7 +10,7 @@ uses
   Cliente in 'Entidade\Cliente.pas',
   Produto in 'Entidade\Produto.pas',
   Pedido in 'Entidade\Pedido.pas',
-  ItensPedido in 'Entidade\ItensPedido.pas',
+  ItemPedido in 'Entidade\ItemPedido.pas',
   Utilitario in 'Utilitario.pas',
   DMMain in 'DMMain.pas' {conexaoDados: TDataModule};
 

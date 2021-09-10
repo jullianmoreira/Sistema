@@ -24,6 +24,11 @@ type
     function ConectarBanco(banco : String = '') : Boolean;
     function CriarBanco : Boolean;
     function CriarTabelas : Boolean;
+
+    function CriarTabelaPedido : Boolean;
+    function CriarTabelaCliente : Boolean;
+    function CriarTabelaProduto : Boolean;
+    function CriarTableaItemPedido : Boolean;
   public
     { Public declarations }
     StatusConexao : String;
@@ -110,19 +115,16 @@ begin
     end;
 end;
 
-function TconexaoDados.CriarTabelas: Boolean;
+function TconexaoDados.CriarTabelaCliente: Boolean;
 var
   faker : TFaker;
   cliente : TCliente;
-  produto : TProduto;
-
   I : Integer;
 begin
   try
+    faker := TFaker.Criar;
     with fdComando do
       begin
-        faker := TFaker.Criar;
-
         Close;
         CommandText.Clear;
         SchemaName := DEFAULT_PROP_NOME_BANCO;
@@ -155,6 +157,71 @@ begin
               end;
           end;
 
+        Execute;
+        Result := true;
+      end;
+  except
+    on e : exception do
+      begin
+        Result := false;
+        ShowMessage('Não foi possível configurar a tabela "Cliente".'+#13+
+        'Mensagem: '+e.Message);
+        fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfigCliente_'+
+        FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
+      end;
+  end;
+end;
+
+function TconexaoDados.CriarTabelaPedido: Boolean;
+begin
+  try
+    with fdComando do
+      begin
+        Close;
+        CommandText.Clear;
+        SchemaName := DEFAULT_PROP_NOME_BANCO;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.pedido (');
+        CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
+        CommandText.Add('	cliente_codigo BIGINT NOT NULL,');
+        CommandText.Add('	data_criacao TIMESTAMP DEFAULT now() NOT NULL,');
+        CommandText.Add('	data_fechamento TIMESTAMP NULL,');
+        CommandText.Add('	excluido varchar(1) DEFAULT ''N'' NOT NULL,');
+        CommandText.Add('	data_exclusao TIMESTAMP NULL,');
+        CommandText.Add('	CONSTRAINT pedido_pk PRIMARY KEY (codigo),');
+        CommandText.Add('	CONSTRAINT pedido_fk FOREIGN KEY (cliente_codigo) REFERENCES pedidos.cliente(codigo)');
+        CommandText.Add(')');
+        CommandText.Add('ENGINE=InnoDB');
+        CommandText.Add('DEFAULT CHARSET=utf8mb4');
+        CommandText.Add('COLLATE=utf8mb4_general_ci;');
+
+        Execute;
+        Result := true;
+      end;
+  except
+    on e : exception do
+      begin
+        Result := false;
+        ShowMessage('Não foi possível configurar a tabela "Pedido".'+#13+
+        'Mensagem: '+e.Message);
+        fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfigPedido_'+
+        FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
+      end;
+  end;
+end;
+
+function TconexaoDados.CriarTabelaProduto: Boolean;
+var
+  faker : TFaker;
+  produto : TProduto;
+  I : Integer;
+begin
+  try
+    faker := TFaker.Criar;
+    with fdComando do
+      begin
+        Close;
+        CommandText.Clear;
+        SchemaName := DEFAULT_PROP_NOME_BANCO;
         CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.produto (');
         CommandText.Add('  codigo bigint(20) NOT NULL AUTO_INCREMENT,');
         CommandText.Add('  nome varchar(150) NOT NULL,');
@@ -180,18 +247,87 @@ begin
           end;
 
         Execute;
-        Result := ConectarBanco(DEFAULT_PROP_NOME_BANCO);
+        Result := true;
       end;
+  except
+    on e : exception do
+      begin
+        Result := false;
+        ShowMessage('Não foi possível configurar a tabela "Produto".'+#13+
+        'Mensagem: '+e.Message);
+        fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfigProduto_'+
+        FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
+      end;
+
+  end;
+end;
+
+function TconexaoDados.CriarTabelas: Boolean;
+var
+  continuar : Boolean;
+begin
+  try
+    continuar := CriarTabelaCliente and CriarTabelaProduto;
+    if continuar then
+      continuar := CriarTabelaPedido;
+
+    if continuar then
+      continuar := CriarTableaItemPedido;
+
+    if continuar then
+      Result := ConectarBanco(DEFAULT_PROP_NOME_BANCO);
+
   except
     on e : Exception do
       begin
         Result := false;
-        ShowMessage('Não foi possível configurar as tabelas "Cliente" e "Produto".'+#13+
+        ShowMessage('Não foi possível configurar as tabelas do banco de dados "pedidos".'+#13+
         'Mensagem: '+e.Message);
         fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfig_'+
         FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
       end;
   end;
+end;
+
+function TconexaoDados.CriarTableaItemPedido: Boolean;
+begin
+  try
+    with fdComando do
+      begin
+        Close;
+        CommandText.Clear;
+        SchemaName := DEFAULT_PROP_NOME_BANCO;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.itempedido (');
+        CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
+        CommandText.Add('	pedido_codigo BIGINT NOT NULL,');
+        CommandText.Add('	produto_codigo BIGINT NOT NULL,');
+        CommandText.Add('	qtde DOUBLE DEFAULT 1 NOT NULL,');
+        CommandText.Add('	vlr DOUBLE DEFAULT 0 NOT NULL,');
+        CommandText.Add('	data_cadastro TIMESTAMP DEFAULT now() NOT NULL,');
+        CommandText.Add('	data_entrega TIMESTAMP NULL,');
+        CommandText.Add('	CONSTRAINT itempedido_pk PRIMARY KEY (codigo),');
+        CommandText.Add('	CONSTRAINT itempedido_fk FOREIGN KEY (pedido_codigo) REFERENCES pedidos.pedido(codigo),');
+        CommandText.Add('	CONSTRAINT itempedido_fk_1 FOREIGN KEY (produto_codigo) REFERENCES pedidos.produto(codigo)');
+        CommandText.Add(')');
+        CommandText.Add('ENGINE=InnoDB');
+        CommandText.Add('DEFAULT CHARSET=utf8mb4');
+        CommandText.Add('COLLATE=utf8mb4_general_ci;');
+
+        Execute;
+        Result := true;
+      end;
+  except
+    on e : exception do
+      begin
+        Result := false;
+        ShowMessage('Não foi possível configurar a tabela "ItemPedido".'+#13+
+        'Mensagem: '+e.Message);
+        fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfigPedido_'+
+        FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
+      end;
+  end;
+(*
+*)
 end;
 
 procedure TconexaoDados.DataModuleCreate(Sender: TObject);

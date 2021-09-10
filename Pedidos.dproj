@@ -116,7 +116,7 @@
         <DCCReference Include="Entidade\Cliente.pas"/>
         <DCCReference Include="Entidade\Produto.pas"/>
         <DCCReference Include="Entidade\Pedido.pas"/>
-        <DCCReference Include="Entidade\ItensPedido.pas"/>
+        <DCCReference Include="Entidade\ItemPedido.pas"/>
         <DCCReference Include="Utilitario.pas"/>
         <DCCReference Include="DMMain.pas">
             <Form>conexaoDados</Form>

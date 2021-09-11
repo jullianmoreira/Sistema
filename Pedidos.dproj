@@ -123,6 +123,14 @@
             <FormType>dfm</FormType>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
+        <DCCReference Include="UConfigurar_Conexao.pas">
+            <Form>formConfigurar_Conexao</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="UPedidos.pas">
+            <Form>formPedidos</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <RcItem Include="Recursos\libmysql.dll">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>RCDATA</ResourceType>
@@ -157,6 +165,18 @@
                 <DeployFile LocalName="Win32\Debug\Pedidos.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Pedidos.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win32\Release\Pedidos.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Pedidos.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Recursos\libmysql.dll" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

@@ -50,4 +50,11 @@ begin
   end;
 end;
 
+{ TProdutoRepositorio }
+
+function TProdutoRepositorio.listarProduto(condicoes: TStringList): TDataSet;
+begin
+
+end;
+
 end.

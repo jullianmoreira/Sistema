@@ -1,7 +1,7 @@
 object conexaoDados: TconexaoDados
   OldCreateOrder = False
   OnCreate = DataModuleCreate
-  Height = 341
+  Height = 227
   Width = 515
   object fdManager: TFDManager
     FormatOptions.AssignedValues = [fvMapRules]
@@ -24,5 +24,15 @@ object conexaoDados: TconexaoDados
     Connection = fdConexao
     Left = 72
     Top = 40
+  end
+  object fdTransacao: TFDTransaction
+    Connection = fdConexao
+    Left = 216
+    Top = 120
+  end
+  object fdCursor: TFDGUIxWaitCursor
+    Provider = 'Forms'
+    Left = 320
+    Top = 80
   end
 end

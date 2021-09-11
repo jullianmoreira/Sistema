@@ -8,7 +8,7 @@ uses
   FireDAC.Stan.Def, FireDAC.Phys, FireDAC.Stan.Pool, FireDAC.Stan.Async,
   FireDAC.VCLUI.Wait, FireDAC.Phys.MySQLDef, FireDAC.Phys.MySQL, Data.DB,
   FireDAC.Comp.Client, Vcl.Dialogs, FireDAC.Stan.Param, FireDAC.DatS,
-  FireDAC.DApt.Intf, Produto;
+  FireDAC.DApt.Intf, Produto, FireDAC.DApt, FireDAC.Comp.UI;
 
 type
   TconexaoDados = class(TDataModule)
@@ -16,6 +16,8 @@ type
     fdConexao: TFDConnection;
     linkMySQL: TFDPhysMySQLDriverLink;
     fdComando: TFDCommand;
+    fdTransacao: TFDTransaction;
+    fdCursor: TFDGUIxWaitCursor;
     procedure DataModuleCreate(Sender: TObject);
   private
     { Private declarations }
@@ -32,6 +34,9 @@ type
   public
     { Public declarations }
     StatusConexao : String;
+
+    function TestarConexao(teste : TConfig_Banco) : Boolean;
+    function Reconectar(novaConfig : TConfig_Banco) : Boolean;
   end;
 
 var
@@ -98,7 +103,7 @@ begin
             Close;
             SchemaName := 'sys';
             CommandText.Clear;
-            CommandText.Add('CREATE DATABASE IF NOT EXISTS `'+DEFAULT_PROP_NOME_BANCO
+            CommandText.Add('CREATE DATABASE IF NOT EXISTS `'+Self.Config_Banco.NomeBanco
               +'` /*!40100 DEFAULT CHARACTER SET utf8mb4 */;');
             Execute;
           end;
@@ -107,7 +112,7 @@ begin
       except
         on e : exception do
           begin
-            ShowMessage('Nâo foi possível configurar o Banco: "pedidos".'+#13+
+            ShowMessage('Nâo foi possível configurar o Banco: "'+Self.Config_Banco.NomeBanco+'".'+#13+
             'Mensagem: '+e.Message);
             Result := false;
           end;
@@ -127,8 +132,8 @@ begin
       begin
         Close;
         CommandText.Clear;
-        SchemaName := DEFAULT_PROP_NOME_BANCO;
-        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.cliente (');
+        SchemaName := Self.Config_Banco.NomeBanco;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+Self.Config_Banco.NomeBanco+'.cliente (');
         CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
         CommandText.Add('	nome varchar(200) NOT NULL,');
         CommandText.Add('	cidade varchar(50) NOT NULL,');
@@ -139,7 +144,7 @@ begin
         CommandText.Add('DEFAULT CHARSET=utf8mb4');
         CommandText.Add('COLLATE=utf8mb4_general_ci;');
 
-        CommandText.Add('INSERT INTO '+DEFAULT_PROP_NOME_BANCO+'.cliente (nome, cidade, uf) values');
+        CommandText.Add('INSERT INTO '+Self.Config_Banco.NomeBanco+'.cliente (nome, cidade, uf) values');
         for I := 0 to (faker.Clientes.Count - 1) do
           begin
             cliente := faker.Clientes.Items[I];
@@ -179,8 +184,8 @@ begin
       begin
         Close;
         CommandText.Clear;
-        SchemaName := DEFAULT_PROP_NOME_BANCO;
-        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.pedido (');
+        SchemaName := Self.Config_Banco.NomeBanco;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+Self.Config_Banco.NomeBanco+'.pedido (');
         CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
         CommandText.Add('	cliente_codigo BIGINT NOT NULL,');
         CommandText.Add('	data_criacao TIMESTAMP DEFAULT now() NOT NULL,');
@@ -220,8 +225,8 @@ begin
       begin
         Close;
         CommandText.Clear;
-        SchemaName := DEFAULT_PROP_NOME_BANCO;
-        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.produto (');
+        SchemaName := Self.Config_Banco.NomeBanco;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+Self.Config_Banco.NomeBanco+'.produto (');
         CommandText.Add('  codigo bigint(20) NOT NULL AUTO_INCREMENT,');
         CommandText.Add('  nome varchar(150) NOT NULL,');
         CommandText.Add('  valor_venda double NOT NULL DEFAULT ''0'',');
@@ -229,7 +234,7 @@ begin
         CommandText.Add(') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
         CommandText.Add('COLLATE=utf8mb4_general_ci;');
 
-        CommandText.Add('INSERT INTO '+DEFAULT_PROP_NOME_BANCO+'.produto (nome, valor_venda) values');
+        CommandText.Add('INSERT INTO '+Self.Config_Banco.NomeBanco+'.produto (nome, valor_venda) values');
         for I := 0 to (faker.Produtos.Count - 1) do
           begin
             produto := faker.Produtos.Items[I];
@@ -274,13 +279,13 @@ begin
       continuar := CriarTableaItemPedido;
 
     if continuar then
-      Result := ConectarBanco(DEFAULT_PROP_NOME_BANCO);
+      Result := ConectarBanco(Self.Config_Banco.NomeBanco);
 
   except
     on e : Exception do
       begin
         Result := false;
-        ShowMessage('Não foi possível configurar as tabelas do banco de dados "pedidos".'+#13+
+        ShowMessage('Não foi possível configurar as tabelas do banco de dados "'+Self.Config_Banco.NomeBanco+'".'+#13+
         'Mensagem: '+e.Message);
         fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroConfig_'+
         FormatDateTime('dd-mm-yyyy hh-mm',now)+'.sql');
@@ -295,8 +300,8 @@ begin
       begin
         Close;
         CommandText.Clear;
-        SchemaName := DEFAULT_PROP_NOME_BANCO;
-        CommandText.Add('CREATE TABLE IF NOT EXISTS '+DEFAULT_PROP_NOME_BANCO+'.itempedido (');
+        SchemaName := Self.Config_Banco.NomeBanco;
+        CommandText.Add('CREATE TABLE IF NOT EXISTS '+Self.Config_Banco.NomeBanco+'.itempedido (');
         CommandText.Add('	codigo BIGINT auto_increment NOT NULL,');
         CommandText.Add('	pedido_codigo BIGINT NOT NULL,');
         CommandText.Add('	produto_codigo BIGINT NOT NULL,');
@@ -332,23 +337,70 @@ end;
 
 procedure TconexaoDados.DataModuleCreate(Sender: TObject);
 var
-  conectado : Boolean;
+  _conectado : Boolean;
 begin
   try
-    StatusConexao := 'NÃO CONECTADO';
+    StatusConexao := NAO_CONECTADO;
     Config_Banco := TConfig_Banco.Criar;
     linkMySQL.VendorLib := Config_Banco.LocalDriver+MYSQL_LIB;
 
     fdManager.Active := true;
 
-    conectado := ConectarBanco(DEFAULT_PROP_NOME_BANCO);
-    if conectado then
+    _conectado := ConectarBanco(DEFAULT_PROP_NOME_BANCO);
+    if _conectado then
       begin
-        StatusConexao := 'CONECTADO';
+        StatusConexao := CONECTADO;
       end;
 
   finally
     FreeAndNil(Config_Banco);
+  end;
+end;
+
+function TconexaoDados.Reconectar(novaConfig: TConfig_Banco): Boolean;
+begin
+  Self.Config_Banco.NomeBanco := novaConfig.NomeBanco;
+  Self.Config_Banco.NomeUsuario := novaConfig.NomeUsuario;
+  Self.Config_Banco.NomeHost := novaConfig.NomeHost;
+  Self.Config_Banco.Porta  := novaConfig.Porta;
+
+  Result := ConectarBanco(novaConfig.NomeBanco);
+end;
+
+function TconexaoDados.TestarConexao(teste: TConfig_Banco): Boolean;
+var
+  fdConexao_Teste : TFDConnection;
+begin
+  try
+    fdConexao_Teste := TFDConnection.Create(Self);
+
+    with fdConexao_Teste do
+      begin
+        Close;
+        LoginPrompt := false;
+        Params.Clear;
+        Params.Add('DriverID=MySQL');
+        Params.Add('Database='+teste.NomeBanco);
+        Params.Add('Server='+teste.NomeHost);
+        Params.Add('Port='+teste.Porta.ToString);
+        Params.Add('User_Name='+teste.NomeUsuario);
+        Params.Add('Password='+teste.SenhaUsuario);
+        Connected := true;
+        Result := Connected;
+
+        Connected := false;
+      end;
+
+
+    FreeAndNil(fdConexao_Teste);
+  except
+    on e : exception do
+      begin
+        Result := false;
+        TErro.Mostrar('Erro ao tentar conectar no banco com as configurações informadas.'+#13+
+        'Mensagem: '+e.Message);
+        FreeAndNil(fdConexao_Teste);
+      end;
   end;
 end;
 

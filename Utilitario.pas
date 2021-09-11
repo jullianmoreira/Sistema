@@ -22,11 +22,45 @@ const
   DEFAULT_PROP_NOME_HOST = 'localhost';
   DEFAULT_PROP_PORTA = 3306;
 
+  INCLUSAO = 'INCLUSAO';
+  ATUALIZACAO = 'ATUALIZACAO';
+  EXCLUSAO = 'EXCLUSAO';
+
+  PEDIDO_EM_ANDAMENTO = 0;
+  ITENS_NAO_ENTREGUES = 1;
+  PEDIDOS_CONCLUIDOS = 2;
+  ITENS_ENTREGUES = 3;
+
+  CONECTADO = 'CONECTADO';
+  NAO_CONECTADO = 'NÃO CONECTADO';
+
   SENHA_BANCO = 'passwd';
 
   MYSQL_LIB = 'libmysql.dll';
 
 type
+  TCriterio = class(TObject)
+    private
+      FCampos : TArray<String>;
+      FCondicao : TArray<String>;
+      FValor : TArray<String>;
+      FJuncao : TArray<String>;
+
+      TamanhoAtual : Integer;
+
+    public
+      Agrupamento : String;
+      Ordem : String;
+      constructor Criar;
+
+      procedure addCondicao(Campo, Condicao, Valor : String; Juncao : String = '');
+      procedure limparCondicoes;
+      procedure limparCondicao(Campo : String); overload;
+      procedure limparCondicao(Posicao : Integer); overload;
+
+      function getCriterios : TStringList;
+  end;
+
   TFaker = class(TObject)
     private
       FClientes: TList<TCliente>;
@@ -64,6 +98,7 @@ type
     procedure InicializarDriver(local : String);
   public
     constructor Criar;
+    procedure Salvar;
   published
     property NomeBanco: String read FNomeBanco write FNomeBanco;
     property NomeUsuario: String read FNomeUsuario write FNomeUsuario;
@@ -177,11 +212,46 @@ begin
   end;
 end;
 
+procedure TConfig_Banco.Salvar;
+var
+  iniFile : TIniFile;
+  LocalApp, LocalIni, _LocalDriver : String;
+begin
+  inherited Create;
+  LocalApp := TFuncoes.LocalApp;
+  LocalIni := LocalApp+'\'+INI_FILE;
+  _LocalDriver := LocalApp;
+  try
+    if FileExists(LocalIni) then
+      begin
+        iniFile := TIniFile.Create(LocalIni);
+
+        iniFile.WriteString(DB_CONFIG, PROP_NOME_BANCO, DEFAULT_PROP_NOME_BANCO);
+        iniFile.WriteString(DB_CONFIG, PROP_NOME_USUARIO, DEFAULT_PROP_NOME_USUARIO);
+        iniFile.WriteString(DB_CONFIG, PROP_NOME_HOST, DEFAULT_PROP_NOME_HOST);
+        iniFile.WriteInteger(DB_CONFIG, PROP_PORTA, DEFAULT_PROP_PORTA);
+
+        Self.LocalDriver := _LocalDriver;
+        InicializarDriver(Self.LocalDriver);
+
+        Self.SenhaUsuario := SENHA_BANCO;
+
+        iniFile.Free;
+      end;
+  except
+    on e : exception do
+      begin
+        TErro.Mostrar(e.Message);
+      end;
+  end;
+
+end;
+
 { TErro }
 
 class procedure TErro.Mostrar(mensagem: String);
 begin
-  raise Exception.Create(mensagem);
+  ShowMessage(mensagem);
 end;
 
 { TFuncoes }
@@ -413,6 +483,113 @@ begin
 
   AddClientes;
   AddProdutos
+end;
+
+{ TCriterio }
+
+procedure TCriterio.addCondicao(Campo, Condicao, Valor, Juncao: String);
+var
+  pos : Integer;
+begin
+  Inc(TamanhoAtual);
+  pos := (TamanhoAtual - 1);
+
+  SetLength(Self.FCampos, TamanhoAtual);
+  SetLength(Self.FCondicao, TamanhoAtual);
+  SetLength(Self.FValor, TamanhoAtual);
+  SetLength(Self.FJuncao, TamanhoAtual);
+
+  Self.FCampos[pos] := Campo;
+  Self.FCondicao[pos] := Condicao;
+  Self.FValor[pos] := Valor;
+  Self.FJuncao[pos] := Juncao;
+end;
+
+constructor TCriterio.Criar;
+begin
+  inherited Create;
+
+  SetLength(Self.FCampos, 0);
+  SetLength(Self.FCondicao, 0);
+  SetLength(Self.FValor, 0);
+  SetLength(Self.FJuncao, 0);
+
+  TamanhoAtual := 0;
+end;
+
+function TCriterio.getCriterios: TStringList;
+var
+  i : Integer;
+  Clause : String;
+begin
+  Result := TStringList.Create;
+  Result.Clear;
+  Clause := 'WHERE ';
+  for i := 0 to (TamanhoAtual-1) do
+    begin
+      if Self.FCampos[i] <> '' then
+        begin
+          Result.Add(Clause + Self.FCampos[i]+' '+Self.FCondicao[i]+' '+Self.FValor[i]);
+
+          if Self.FJuncao[i] <> '' then
+            Clause := Self.FJuncao[i]
+          else
+            Clause := 'AND ';
+        end;
+    end;
+
+  if Agrupamento <> '' then
+    Result.Add('GROUP BY '+Agrupamento);
+
+  if Ordem <> '' then
+    Result.Add('ORDER BY '+Ordem);
+end;
+
+procedure TCriterio.limparCondicao(Posicao: Integer);
+begin
+  if (Posicao < TamanhoAtual) and (Posicao > -1) then
+    begin
+      Self.FCampos[Posicao] := '';
+      Self.FCondicao[Posicao] := '';
+      Self.FValor[Posicao] := '';
+      Self.FJuncao[Posicao] := '';
+    end;
+end;
+
+procedure TCriterio.limparCondicao(Campo: String);
+var
+  I: Integer;
+begin
+  for I := Low(Self.FCampos) to High(Self.FCampos) do
+    begin
+      if Self.FCampos[I] = Campo then
+        begin
+          Self.FCampos[I] := '';
+          Self.FCondicao[I] := '';
+          Self.FValor[I] := '';
+          Self.FJuncao[I] := '';
+        end;
+    end;
+end;
+
+procedure TCriterio.limparCondicoes;
+var
+  I: Integer;
+begin
+
+  for I := TamanhoAtual downto 0 do
+    begin
+      Self.FCampos[I] := '';
+      Self.FCondicao[I] := '';
+      Self.FValor[I] := '';
+      Self.FJuncao[I] := '';
+    end;
+
+  TamanhoAtual := 0;
+  SetLength(Self.FCampos, 0);
+  SetLength(Self.FCondicao, 0);
+  SetLength(Self.FValor, 0);
+  SetLength(Self.FJuncao, 0);
 end;
 
 end.

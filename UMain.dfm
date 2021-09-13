@@ -166,8 +166,6 @@ object formMain: TformMain
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitLeft = 209
-      ExplicitHeight = 103
       object lbl_qtde_pos_0: TLabel
         Left = 0
         Top = 25
@@ -272,8 +270,6 @@ object formMain: TformMain
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 2
-      ExplicitLeft = 337
-      ExplicitHeight = 103
       object lbl_valor_pos_0: TLabel
         Left = 0
         Top = 25

@@ -65,7 +65,7 @@ implementation
 
 {$R *.dfm}
 
-uses DMMain;
+uses DMMain, Cliente;
 
 { TformMain }
 

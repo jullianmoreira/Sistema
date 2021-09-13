@@ -3,8 +3,8 @@
 unit ItemPedido;
 
 interface
-uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario,
-  FireDAC.Comp.Client;
+uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario, Tipos,
+  FireDAC.Comp.Client, IRepositorio;
 
 type
   {Objeto que representa a tabela "itempedido" no banco de dados.
@@ -47,8 +47,10 @@ type
     constructor Criar;
   end;
 
-  TItemPedidoRepositorio = class(TObject)
+  TItemPedidoRepositorio = class(TInterfacedObject, TIRepositorio)
     public
+      function nomeCampoConsulta : String;
+      function nomeRepositorio : String;
       function listar(condicoes : TCriterio) : TDataSet;
 
       function inserirItemPedido(_ItemPedido : TItemPedido) : Boolean;
@@ -209,6 +211,16 @@ begin
 
   end;
 
+end;
+
+function TItemPedidoRepositorio.nomeCampoConsulta: String;
+begin
+  Result := '';
+end;
+
+function TItemPedidoRepositorio.nomeRepositorio: String;
+begin
+  Result := 'Item do Pedido';
 end;
 
 { TItemPedido }

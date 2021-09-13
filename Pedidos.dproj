@@ -131,6 +131,12 @@
             <Form>formPedidos</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="IRepositorio.pas"/>
+        <DCCReference Include="Tipos.pas"/>
+        <DCCReference Include="UPesquisa.pas">
+            <Form>frmPesquisa</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <RcItem Include="Recursos\libmysql.dll">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>RCDATA</ResourceType>

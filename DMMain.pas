@@ -271,6 +271,7 @@ var
   continuar : Boolean;
 begin
   try
+    Result := false;
     continuar := CriarTabelaCliente and CriarTabelaProduto;
     if continuar then
       continuar := CriarTabelaPedido;

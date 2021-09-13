@@ -14,7 +14,10 @@ uses
   Utilitario in 'Utilitario.pas',
   DMMain in 'DMMain.pas' {conexaoDados: TDataModule},
   UConfigurar_Conexao in 'UConfigurar_Conexao.pas' {formConfigurar_Conexao},
-  UPedidos in 'UPedidos.pas' {formPedidos};
+  UPedidos in 'UPedidos.pas' {formPedidos},
+  IRepositorio in 'IRepositorio.pas',
+  Tipos in 'Tipos.pas',
+  UPesquisa in 'UPesquisa.pas' {frmPesquisa};
 
 {$R *.res}
 
@@ -23,6 +26,5 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TconexaoDados, conexaoDados);
   Application.CreateForm(TformMain, formMain);
-  Application.CreateForm(TformPedidos, formPedidos);
   Application.Run;
 end.

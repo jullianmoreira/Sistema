@@ -3,8 +3,8 @@
 unit Pedido;
 
 interface
-uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario,
-  FireDAC.Comp.Client, Vcl.Dialogs;
+uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario, Tipos,
+  FireDAC.Comp.Client, Vcl.Dialogs, IRepositorio;
 
 type
   {Objeto que representa a tabela "pedido" no banco de dados.
@@ -43,10 +43,12 @@ type
   {Repositório de acesso aos dados do Pedido
     Implementado com as funções básicas de listagem, inclusão, atualização e exclusão
   }
-  TPedidoRepositorio = class(TObject)
+  TPedidoRepositorio = class(TInterfacedObject, TIRepositorio)
     public
+      function nomeCampoConsulta : String;
+      function nomeRepositorio : String;
       {Funções de Consulta}
-      function listarPedidos(condicoes : TCriterio) : TDataSet;
+      function listar(condicoes : TCriterio) : TDataSet;
       function listarPedidosComProdutos(condicoes : TCriterio) : TDataSet;
 
       {Bonus de conhecimento em SQL e JSON(Montagem manual)}
@@ -175,7 +177,7 @@ begin
   end;
 end;
 
-function TPedidoRepositorio.listarPedidos(condicoes: TCriterio): TDataSet;
+function TPedidoRepositorio.listar(condicoes: TCriterio): TDataSet;
 var
   fdQry : TFDQuery;
 begin
@@ -267,6 +269,16 @@ begin
       end;
 
   end;
+end;
+
+function TPedidoRepositorio.nomeCampoConsulta: String;
+begin
+  Result := '';
+end;
+
+function TPedidoRepositorio.nomeRepositorio: String;
+begin
+  Result := 'Pedido';
 end;
 
 function TPedidoRepositorio.pedidosDashboard: TStringList;

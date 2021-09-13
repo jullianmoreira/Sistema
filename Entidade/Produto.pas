@@ -3,7 +3,8 @@
 unit Produto;
 
 interface
-uses System.Classes, System.SysUtils, System.Math, Data.DB;
+uses System.Classes, System.SysUtils, System.Math, Data.DB, IRepositorio,
+Tipos;
 
 type
   TProduto = class(TObject)
@@ -20,9 +21,11 @@ type
     function ValorParaBanco : String;
   end;
 
-  TProdutoRepositorio = class(TObject)
+  TProdutoRepositorio = class(TInterfacedObject, TIRepositorio)
     public
-      function listarProduto(condicoes : TStringList) : TDataSet;
+      function nomeCampoConsulta : String;
+      function nomeRepositorio : String;
+      function listar(condicoes : TCriterio) : TDataSet;
   end;
 
 implementation
@@ -52,9 +55,19 @@ end;
 
 { TProdutoRepositorio }
 
-function TProdutoRepositorio.listarProduto(condicoes: TStringList): TDataSet;
+function TProdutoRepositorio.listar(condicoes : TCriterio): TDataSet;
 begin
 
+end;
+
+function TProdutoRepositorio.nomeCampoConsulta: String;
+begin
+  Result := 'nome';
+end;
+
+function TProdutoRepositorio.nomeRepositorio: String;
+begin
+  Result := 'Produto';
 end;
 
 end.

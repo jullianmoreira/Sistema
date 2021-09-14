@@ -2,7 +2,7 @@
  
  Aplicação de Teste
  
- #Orientações
+ # Orientações
  
  Após iniciar o sistema, um procedimento de auto-configuração irá iniciar.
  1 - Primeiro o sistema tentará conectar em um banco de dados de nome "pedidos" com a senha "passwd".

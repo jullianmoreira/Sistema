@@ -396,6 +396,7 @@ object formMain: TformMain
     object actionNovoPedido: TAction
       Category = 'Fun'#231#245'es'
       Caption = 'Novo Pedido'
+      OnExecute = actionNovoPedidoExecute
     end
     object actionFecharPedido: TAction
       Category = 'Fun'#231#245'es'

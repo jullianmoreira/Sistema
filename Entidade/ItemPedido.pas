@@ -6,6 +6,9 @@ interface
 uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario, Tipos,
   FireDAC.Comp.Client, IRepositorio;
 
+const
+  ENTIDADE = 'Item do Pedido';
+
 type
   {Objeto que representa a tabela "itempedido" no banco de dados.
     Este objeto encapsula as funções de validação de dados básica e seus comandos:
@@ -43,6 +46,9 @@ type
     function objetoValido(validando : String) : Boolean;
     function getUpdate : TStringList;
     function getInsert : TStringLIst;
+    function quantidade_Banco : String;
+    function valor_unitario_Banco : String;
+    function valor_total_Banco : String;
 
     constructor Criar;
   end;
@@ -56,6 +62,16 @@ type
       function inserirItemPedido(_ItemPedido : TItemPedido) : Boolean;
       function atualizarItemPedido(_ItemPedido : TItemPedido) : Boolean;
       function excluirItemPedido(_ItemPedido : TItemPedido) : Boolean;
+  end;
+
+  TItemPedidoController = class(TObject)
+    private
+      repositorio : TIRepositorio;
+    public
+      constructor Create;
+      function listar(condicoes : TCriterio) : TDataSet;
+      function salvar(item : TItemPedido) : Boolean;
+      function excluir(item : TItemPedido) : Boolean;
   end;
 
 implementation
@@ -80,9 +96,7 @@ begin
 
         if conexaoDados.fdComando.CommandText.Count > 0 then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
             conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
             Result := true;
           end;
       end;
@@ -93,7 +107,6 @@ begin
         TErro.Mostrar('Não foi possível atualizar os dados do Item do Pedido!'+#13+
         'Mensagem: '+e.Message);
         conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroAtualizarItemPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
 
       end;
   end;
@@ -115,9 +128,7 @@ begin
 
         if conexaoDados.fdComando.CommandText.Count > 0 then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
             conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
             Result := true;
           end;
       end;
@@ -128,7 +139,6 @@ begin
         TErro.Mostrar('Não foi possível excluir o Item do Pedido!'+#13+
         'Mensagem: '+e.Message);
         conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroExcluirItemPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
       end;
   end;
 end;
@@ -149,9 +159,7 @@ begin
 
         if conexaoDados.fdComando.CommandText.Count > 0 then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
             conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
             Result := true;
           end;
       end;
@@ -162,7 +170,6 @@ begin
         TErro.Mostrar('Não foi possível inserir os dados do Item do Pedido!'+#13+
         'Mensagem: '+e.Message);
         conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroInserirItemPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
       end;
   end;
 end;
@@ -229,14 +236,14 @@ constructor TItemPedido.Criar;
 begin
   inherited Create;
 
-  Self.Codigo := -1;
-  Self.Pedido_Codigo := -1;
-  Self.Produto_Codigo := -1;
-  Self.Data_Criacao := 0;
-  Self.Data_Entrega := 0;
-  Self.Quantidade := 0;
-  Self.Valor_Unitario := 0;
-  Self.Valor_Total := 0;
+  Self.Codigo := SEM_REGISTRO;
+  Self.Pedido_Codigo := SEM_REGISTRO;
+  Self.Produto_Codigo := SEM_REGISTRO;
+  Self.Data_Criacao := ZeroValue;
+  Self.Data_Entrega := ZeroValue;
+  Self.Quantidade := ZeroValue;
+  Self.Valor_Unitario := ZeroValue;
+  Self.Valor_Total := ZeroValue;
 end;
 
 function TItemPedido.getInsert: TStringLIst;
@@ -246,19 +253,19 @@ begin
     Result.Clear;
     with Result do
       begin
-        Add('INSERT INTO itempedido (pedido_codigo, produto_codigo, data_criacao, quantidade, valor_unitario, valor_total)');
+        Add('INSERT INTO itempedido (pedido_codigo, produto_codigo, data_cadastro, quantidade, valor_unitario, valor_total)');
         Add('VALUES(');
         Add(Self.Pedido_Codigo.ToString);
         Add(','+Self.Produto_Codigo.ToString);
 
         if Self.Data_Criacao <> 0 then
-          Add(','+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Criacao).QuotedString)
+          Add(','+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Criacao).QuotedString)
         else
           Add(', CURRENT_TIMESTAMP');
 
-        Add(', '+FormatFloat('#0.00',Self.Quantidade).Replace(',','.').QuotedString);
-        Add(', '+FormatFloat('#0.00',Self.Valor_Unitario).Replace(',','.').QuotedString);
-        Add(', '+FormatFloat('#0.00',Self.Valor_Total).Replace(',','.').QuotedString);
+        Add(', '+Self.quantidade_Banco);
+        Add(', '+Self.valor_unitario_Banco);
+        Add(', '+Self.valor_total_Banco);
         Add(');');
       end;
   except
@@ -288,15 +295,15 @@ begin
         Add('pedido_codigo = '+Self.Pedido_Codigo.ToString);
         Add(', produto_codigo = '+Self.Produto_Codigo.ToString);
 
-        if Self.Data_Criacao <> 0 then
-          Add(', data_criacao = '+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Criacao).QuotedString);
+        if Self.Data_Criacao <> ZeroValue then
+          Add(', data_criacao = '+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Criacao).QuotedString);
 
-        if Self.Data_Entrega <> 0 then
-          Add(', data_entrega = '+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Entrega).QuotedString);
+        if Self.Data_Entrega <> ZeroValue then
+          Add(', data_entrega = '+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Entrega).QuotedString);
 
-        Add(', quantidade = '+FormatFloat('#0.00',Self.Quantidade).Replace(',','.').QuotedString);
-        Add(', valor_unitario = '+FormatFloat('#0.00',Self.Valor_Unitario).Replace(',','.').QuotedString);
-        Add(', valor_total = '+FormatFloat('#0.00',Self.Valor_Total).Replace(',','.').QuotedString);
+        Add(', quantidade = '+Self.quantidade_Banco);
+        Add(', valor_unitario = '+self.valor_unitario_Banco);
+        Add(', valor_total = '+self.valor_total_Banco);
         Add('WHERE codigo = '+Self.Codigo.ToString+';');
       end;
   except
@@ -320,7 +327,7 @@ begin
   Result := true;
   if (validando = ATUALIZACAO) or (validando = EXCLUSAO) then
     begin
-      if Self.Codigo < 1 then
+      if Self.Codigo < REGISTRO_VALIDO then
         begin
           TErro.Mostrar('Código de Item inválido!');
           Result := false;
@@ -330,35 +337,35 @@ begin
 
   if (validando = INCLUSAO) or (validando = ATUALIZACAO) then
     begin
-      if Self.Pedido_Codigo < 1 then
+      if Self.Pedido_Codigo < REGISTRO_VALIDO then
         begin
           TErro.Mostrar('Código de Pedido inválido!');
           Result := false;
           exit;
         end;
 
-      if Self.Produto_Codigo < 1 then
+      if Self.Produto_Codigo < REGISTRO_VALIDO then
         begin
           TErro.Mostrar('Código de Produto inválido!');
           Result := false;
           exit;
         end;
 
-      if Self.Quantidade <= 0 then
+      if Self.Quantidade <= ZeroValue then
         begin
           TErro.Mostrar('Quantidade deve ser maior que 0!');
           Result := false;
           exit;
         end;
 
-      if Self.Valor_Unitario <= 0 then
+      if Self.Valor_Unitario <= ZeroValue then
         begin
           TErro.Mostrar('Valor Unitário deve ser maior que 0!');
           Result := false;
           exit;
         end;
 
-      if Self.Valor_Total <= 0 then
+      if Self.Valor_Total <= ZeroValue then
         begin
           TErro.Mostrar('Valor Total deve ser maior que 0!');
           Result := false;
@@ -367,6 +374,49 @@ begin
 
     end;
 
+end;
+
+function TItemPedido.quantidade_Banco: String;
+begin
+  Result := FormatFloat(FORMAT_NUMERO_BANCO,Self.Quantidade).Replace(',','.').QuotedString;
+end;
+
+function TItemPedido.valor_total_Banco: String;
+begin
+  Result := FormatFloat(FORMAT_NUMERO_BANCO,Self.Valor_Total).Replace(',','.').QuotedString
+end;
+
+function TItemPedido.valor_unitario_Banco: String;
+begin
+  Result := FormatFloat(FORMAT_NUMERO_BANCO,Self.Valor_Unitario).Replace(',','.').QuotedString
+end;
+
+{ TItemPedidoController }
+
+constructor TItemPedidoController.Create;
+begin
+  inherited Create;
+end;
+
+function TItemPedidoController.excluir(item: TItemPedido): Boolean;
+begin
+  if item.Codigo <> SEM_REGISTRO then
+    begin
+      Result := TItemPedidoRepositorio(repositorio).excluirItemPedido(item);
+    end;
+end;
+
+function TItemPedidoController.listar(condicoes: TCriterio): TDataSet;
+begin
+  Result := repositorio.listar(condicoes);
+end;
+
+function TItemPedidoController.salvar(item: TItemPedido): Boolean;
+begin
+  if item.Codigo = SEM_REGISTRO then
+    Result := TItemPedidoRepositorio(repositorio).inserirItemPedido(item)
+  else
+    Result := TItemPedidoRepositorio(repositorio).atualizarItemPedido(item);
 end;
 
 end.

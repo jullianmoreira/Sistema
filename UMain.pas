@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Menus, System.Actions,
   Vcl.ActnList, Vcl.Buttons, Vcl.ExtCtrls, Utilitario, Pedido, JSON,
-  UConfigurar_Conexao;
+  UConfigurar_Conexao, UPedidos;
 
 type
   TformMain = class(TForm)
@@ -48,6 +48,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure loadDashboardTimer(Sender: TObject);
     procedure actionConfigurarBancoExecute(Sender: TObject);
+    procedure actionNovoPedidoExecute(Sender: TObject);
   private
     { Private declarations }
     procedure checarConexao;
@@ -75,6 +76,15 @@ begin
     formConfigurar_Conexao := TformConfigurar_Conexao.Criar;
   finally
     FreeAndNil(formConfigurar_Conexao);
+  end;
+end;
+
+procedure TformMain.actionNovoPedidoExecute(Sender: TObject);
+begin
+  try
+    formPedidos := TformPedidos.Criar(TPedido.Criar);
+  finally
+    FreeAndNil(formPedidos);
   end;
 end;
 
@@ -123,8 +133,6 @@ begin
 
   FreeAndNil(repositorioPedido);
   FreeAndNil(dashboardData);
-  FreeAndNil(data);
-  FreeAndNil(dataArray);
 end;
 
 procedure TformMain.checarConexao;

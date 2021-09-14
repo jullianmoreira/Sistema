@@ -24,7 +24,6 @@ object frmPesquisa: TfrmPesquisa
     Height = 65
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 798
     object Label1: TLabel
       Left = 16
       Top = 3
@@ -51,6 +50,7 @@ object frmPesquisa: TfrmPesquisa
       Height = 21
       TabOrder = 0
       OnChange = edtNomeConsultaChange
+      OnKeyDown = edtNomeConsultaKeyDown
     end
   end
   object Panel1: TPanel
@@ -61,13 +61,13 @@ object frmPesquisa: TfrmPesquisa
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = 308
     object btSelecionar: TSpeedButton
       Left = 384
       Top = 6
       Width = 55
       Height = 22
       Caption = 'Selecionar'
+      OnClick = btSelecionarClick
     end
     object btFechar: TSpeedButton
       Left = 445
@@ -75,6 +75,7 @@ object frmPesquisa: TfrmPesquisa
       Width = 60
       Height = 22
       Caption = 'Fechar'
+      OnClick = btFecharClick
     end
   end
   object gridPesquisa: TDBGrid
@@ -83,12 +84,16 @@ object frmPesquisa: TfrmPesquisa
     Width = 518
     Height = 244
     Align = alClient
+    DataSource = dsPesquisa
+    Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
     TabOrder = 2
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
     TitleFont.Height = -11
     TitleFont.Name = 'Tahoma'
     TitleFont.Style = []
+    OnDblClick = gridPesquisaDblClick
+    OnKeyDown = gridPesquisaKeyDown
   end
   object dsPesquisa: TDataSource
     Left = 368

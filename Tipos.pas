@@ -4,6 +4,25 @@ interface
 uses System.Classes, System.StrUtils, System.Math, System.SysUtils, System.IniFiles,
   Winapi.Windows, Vcl.Forms, Generics.Collections;
 
+const
+  VAZIO = '';
+  SEM_REGISTRO = -1;
+  REGISTRO_VALIDO = 1;
+  STR_UM = '1';
+  FORMAT_NUMERO = '#,##0.00';
+  FORMAT_HORARIO_BANCO = 'yyyy-mm-dd hh:mm:ss';
+  FORMAT_NUMERO_BANCO = '#0.00';
+
+  CAMPO_CODIGO = 'codigo';
+  CAMPO_NOME = 'nome';
+  CAMPO_CIDADE = 'cidade';
+  CAMPO_UF = 'uf';
+
+  CAMPO_VALOR_VENDA = 'valor_venda';
+  CAMPO_QUANTIDADE = 'quantidade';
+  CAMPO_VALOR_UNITARIO = 'valor_unitario';
+  CAMPO_VALOR_TOTAL = 'valor_total';
+
 type
     TCriterio = class(TObject)
     private
@@ -121,7 +140,7 @@ var
   I: Integer;
 begin
 
-  for I := TamanhoAtual downto 0 do
+  for I := (TamanhoAtual-1) downto 0 do
     begin
       Self.FCampos[I] := '';
       Self.FCondicao[I] := '';

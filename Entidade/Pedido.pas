@@ -6,6 +6,10 @@ interface
 uses System.Classes, System.SysUtils, System.Math, Data.DB, Utilitario, Tipos,
   FireDAC.Comp.Client, Vcl.Dialogs, IRepositorio;
 
+const
+  ENTIDADE = 'Pedido';
+
+
 type
   {Objeto que representa a tabela "pedido" no banco de dados.
     Este objeto encapsula as funções de validação de dados básica e seus comandos:
@@ -37,6 +41,8 @@ type
       function getUpdate : TStringList;
       function getInsert : TStringLIst;
 
+      function ValorTotal_Banco : String;
+
       constructor Criar;
   end;
 
@@ -66,6 +72,17 @@ type
       function inserirPedido(_Pedido : TPedido) : Boolean;
       function atualizarPedido(_Pedido : TPedido) : Boolean;
       function excluirPedido(_Pedido : TPedido) : Boolean;
+
+  end;
+
+  TPedidoController = class(TObject)
+    private
+      repositorio : TIRepositorio;
+    public
+      constructor Create;
+      function listar(condicoes : TCriterio) : TDataSet;
+      function salvar(Pedido : TPedido) : Boolean;
+      function excluir(Pedido : TPedido) : Boolean;
   end;
 
 implementation
@@ -89,9 +106,7 @@ begin
 
         if conexaoDados.fdComando.CommandText.Count > 0 then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
             conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
             Result := true;
           end;
       end;
@@ -102,7 +117,6 @@ begin
         TErro.Mostrar('Não foi possível atualizar os dados do Pedido!'+#13+
         'Mensagem: '+e.Message);
         conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroAtualizarPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
       end;
   end;
 end;
@@ -126,9 +140,7 @@ begin
 
         if conexaoDados.fdComando.CommandText.Count > 0 then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
             conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
             Result := true;
           end;
       end;
@@ -139,31 +151,39 @@ begin
         TErro.Mostrar('Não foi possível excluir o Pedido!'+#13+
         'Mensagem: '+e.Message);
         conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroExcluirPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
       end;
   end;
 end;
 
 function TPedidoRepositorio.inserirPedido(_Pedido: TPedido): Boolean;
+var
+  fdQry : TFDQuery;
 begin
   try
     Result := false;
-    conexaoDados.fdComando.Close;
+    fdQry := TFDQuery.Create(nil);
+    fdQry.Connection := conexaoDados.fdConexao;
+
     if _Pedido.objetoValido(INCLUSAO) then
       begin
-        with conexaoDados.fdComando.CommandText do
+        with fdQry.SQL do
           begin
             Clear;
             AddStrings(_Pedido.getInsert);
           end;
 
-        if conexaoDados.fdComando.CommandText.Count > 0 then
+        if fdQry.SQL.Count > ZeroValue then
           begin
-            conexaoDados.fdTransacao.StartTransaction;
-            conexaoDados.fdComando.Execute;
-            conexaoDados.fdTransacao.Commit;
+            fdQry.Active := true;
+            if not fdQry.IsEmpty then
+              begin
+                _Pedido.Codigo := fdQry.FieldByName('IDPedido').AsInteger;
+              end;
+
             Result := true;
           end;
+
+        FreeAndNil(fdQry);
       end;
   except
     on e : exception do
@@ -171,8 +191,8 @@ begin
         Result := false;
         TErro.Mostrar('Não foi possível inserir os dados do Pedido!'+#13+
         'Mensagem: '+e.Message);
-        conexaoDados.fdComando.CommandText.SaveToFile(TFuncoes.LocalApp+'ErroInserirPedido.sql');
-        conexaoDados.fdTransacao.Rollback;
+        fdQry.SQL.SaveToFile(TFuncoes.LocalApp+'ErroInserirPedido.sql');
+        FreeAndNil(fdQry);
       end;
   end;
 end;
@@ -278,7 +298,7 @@ end;
 
 function TPedidoRepositorio.nomeRepositorio: String;
 begin
-  Result := 'Pedido';
+  Result := ENTIDADE;
 end;
 
 function TPedidoRepositorio.pedidosDashboard: TStringList;
@@ -343,7 +363,7 @@ begin
                         prop := PROP_LAYOUT.Replace('[CAMPO]',campo.FieldName).
                           Replace('[VALOR]','"'+campo.AsString+'"');
                       end
-                    else if campo.DataType = ftInteger then
+                    else if campo.DataType in [ftInteger,ftLargeint] then
                       begin
                         prop := PROP_LAYOUT.Replace('[CAMPO]',campo.FieldName).
                           Replace('[VALOR]',campo.AsString);
@@ -394,6 +414,8 @@ begin
 end;
 
 function TPedidoRepositorio.possuiItens(_Pedido: Integer): Boolean;
+const
+  CAMPO_CONS_LOCAL = 'qtde_itens';
 var
   fdQry : TFDQuery;
 begin
@@ -405,7 +427,7 @@ begin
       begin
         Close;
         Sql.Clear;
-        Sql.Add('select count(*) as qtde_itens form itempedido');
+        Sql.Add('select count(*) as '+CAMPO_CONS_LOCAL+' form itempedido');
         Sql.Add('where pedido_codigo = '+_Pedido.ToString);
         Open;
 
@@ -415,7 +437,7 @@ begin
           end
         else
           begin
-            if FieldByName('qtde_itens').AsInteger > 0 then
+            if FieldByName(CAMPO_CONS_LOCAL).AsInteger > ZeroValue then
               begin
                 Result := true;
               end;
@@ -443,11 +465,11 @@ constructor TPedido.Criar;
 begin
   inherited Create;
 
-  Self.Codigo := -1;
-  Self.Cliente_Codigo := -1;
-  Self.Data_Criacao := 0;
-  Self.Data_Fechamento := 0;
-  Self.Valor_Total := 0;
+  Self.Codigo := SEM_REGISTRO;
+  Self.Cliente_Codigo := SEM_REGISTRO;
+  Self.Data_Criacao := ZeroValue;
+  Self.Data_Fechamento := ZeroValue;
+  Self.Valor_Total := ZeroValue;
 end;
 
 function TPedido.getInsert: TStringLIst;
@@ -461,18 +483,19 @@ begin
         Add('VALUES(');
         Add(Self.Cliente_Codigo.ToString);
 
-        if Self.Data_Criacao <> 0 then
-          Add(','+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Criacao).QuotedString)
+        if Self.Data_Criacao <> ZeroValue then
+          Add(','+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Criacao).QuotedString)
         else
           Add(', CURRENT_TIMESTAMP');
 
-        if Self.Data_Fechamento <> 0 then
-          Add(', '+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Criacao).QuotedString)
+        if Self.Data_Fechamento <> ZeroValue then
+          Add(', '+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Criacao).QuotedString)
         else
           Add(', NULL');
 
-        Add(', '+FormatFloat('#0.00',Self.Valor_Total).Replace(',','.').QuotedString);
+        Add(', '+Self.ValorTotal_Banco);
         Add(');');
+        Add('SELECT LAST_INSERT_ID() AS IDPedido;');
       end;
   except
     on e : Exception do
@@ -500,13 +523,13 @@ begin
         Add('UPDATE pedido SET');
         Add('cliente_codigo = '+Self.Cliente_Codigo.ToString);
 
-        if Self.Data_Criacao <> 0 then
-          Add(', data_criacao = '+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Criacao).QuotedString);
+        if Self.Data_Criacao <> ZeroValue then
+          Add(', data_criacao = '+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Criacao).QuotedString);
 
-        if Self.Data_Fechamento <> 0 then
-          Add(', data_fechamento = '+FormatDateTime('yyyy-mm-dd hh:mm:ss',Self.Data_Fechamento).QuotedString);
+        if Self.Data_Fechamento <> ZeroValue then
+          Add(', data_fechamento = '+FormatDateTime(FORMAT_HORARIO_BANCO,Self.Data_Fechamento).QuotedString);
 
-        Add(', vlr_total = '+FormatFloat('#0.00',Self.Valor_Total).Replace(',','.').QuotedString);
+        Add(', vlr_total = '+Self.ValorTotal_Banco);
         Add('WHERE codigo = '+Self.Codigo.ToString+';');
       end;
   except
@@ -530,7 +553,7 @@ begin
   Result := true;
   if (validando = ATUALIZACAO) or (validando = EXCLUSAO) then
     begin
-      if Self.Codigo < 1 then
+      if Self.Codigo < REGISTRO_VALIDO then
         begin
           TErro.Mostrar('Código de Pedido inválido!');
           Result := false;
@@ -540,7 +563,7 @@ begin
 
   if validando = INCLUSAO then
     begin
-      if Self.Cliente_Codigo < 1 then
+      if Self.Cliente_Codigo < REGISTRO_VALIDO then
         begin
           TErro.Mostrar('Código de Cliente inválido!');
           Result := false;
@@ -548,6 +571,37 @@ begin
         end;
     end;
 
+end;
+
+function TPedido.ValorTotal_Banco: String;
+begin
+  Result := FormatFloat(FORMAT_NUMERO_BANCO,Self.Valor_Total).Replace(',','.').QuotedString
+end;
+
+{ TPedidoController }
+
+constructor TPedidoController.Create;
+begin
+  inherited Create;
+  repositorio := TPedidoRepositorio.Create;
+end;
+
+function TPedidoController.excluir(Pedido: TPedido): Boolean;
+begin
+
+end;
+
+function TPedidoController.listar(condicoes: TCriterio): TDataSet;
+begin
+  Result := repositorio.listar(condicoes);
+end;
+
+function TPedidoController.salvar(Pedido: TPedido): Boolean;
+begin
+  if Pedido.Codigo = SEM_REGISTRO then
+    Result := TPedidoRepositorio(repositorio).inserirPedido(Pedido)
+  else
+    Result := TPedidoRepositorio(repositorio).atualizarPedido(Pedido);
 end;
 
 end.

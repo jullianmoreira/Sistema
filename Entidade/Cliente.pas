@@ -33,8 +33,13 @@ type
   end;
 
   TClienteController = class(TObject)
+    private
+      repositorio : TIRepositorio;
+
     public
+      constructor Create;
       function Consultar : TCliente;
+      function pegarPorCodigo(Codigo : Integer) : TCliente;
   end;
 
 implementation
@@ -109,29 +114,29 @@ begin
     Result := TCliente.Criar;
     configuracao := TConfigTela.Create;
 
-    configuracao.Repositorio := TClienteRepositorio.Create;
+    configuracao.Repositorio := Self.repositorio;
     SetLength(configuracao.Colunas, 4);
 
     configuracao.Colunas[0] := TColumn.Create(nil);
-    configuracao.Colunas[0].FieldName := 'codigo';
+    configuracao.Colunas[0].FieldName := CAMPO_CODIGO;
     configuracao.Colunas[0].Title.Caption := 'Código';
     configuracao.Colunas[0].Title.Alignment := taCenter;
     configuracao.Colunas[0].Width := 75;
 
     configuracao.Colunas[1] := TColumn.Create(nil);
-    configuracao.Colunas[1].FieldName := 'nome';
+    configuracao.Colunas[1].FieldName := CAMPO_NOME;
     configuracao.Colunas[1].Title.Caption := 'Nome';
     configuracao.Colunas[1].Title.Alignment := taCenter;
     configuracao.Colunas[1].Width := 280;
 
     configuracao.Colunas[2] := TColumn.Create(nil);
-    configuracao.Colunas[2].FieldName := 'cidade';
+    configuracao.Colunas[2].FieldName := CAMPO_CIDADE;
     configuracao.Colunas[2].Title.Caption := 'Cidade';
     configuracao.Colunas[2].Title.Alignment := taCenter;
     configuracao.Colunas[2].Width := 75;
 
     configuracao.Colunas[3] := TColumn.Create(nil);
-    configuracao.Colunas[3].FieldName := 'uf';
+    configuracao.Colunas[3].FieldName := CAMPO_UF;
     configuracao.Colunas[3].Title.Caption := 'UF';
     configuracao.Colunas[3].Title.Alignment := taCenter;
     configuracao.Colunas[3].Width := 75;
@@ -139,10 +144,20 @@ begin
     frmPesquisa := TfrmPesquisa.Criar(configuracao);
     if frmPesquisa.ShowModal = mrOK then
       begin
-        Result.Codigo := frmPesquisa.dsPesquisa.DataSet.FieldByName('codigo').AsInteger;
-        Result.Nome := frmPesquisa.dsPesquisa.DataSet.FieldByName('nome').AsString;
-        Result.Cidade := frmPesquisa.dsPesquisa.DataSet.FieldByName('cidade').AsString;
-        Result.UF := frmPesquisa.dsPesquisa.DataSet.FieldByName('uf').AsString;
+        if frmPesquisa.Codigo_Selecionado > ZeroValue then
+          begin
+            Result.Codigo := frmPesquisa.dsPesquisa.DataSet.FieldByName(CAMPO_CODIGO).AsInteger;
+            Result.Nome := frmPesquisa.dsPesquisa.DataSet.FieldByName(CAMPO_NOME).AsString;
+            Result.Cidade := frmPesquisa.dsPesquisa.DataSet.FieldByName(CAMPO_CIDADE).AsString;
+            Result.UF := frmPesquisa.dsPesquisa.DataSet.FieldByName(CAMPO_UF).AsString;
+          end
+        else
+          begin
+            Result.Codigo := SEM_REGISTRO;
+            Result.Nome := VAZIO;
+            Result.Cidade := VAZIO;
+            Result.UF := VAZIO;
+          end;
       end;
 
     FreeAndNil(frmPesquisa);
@@ -153,6 +168,43 @@ begin
       begin
         Result := TCliente.Criar;
       end;
+  end;
+end;
+
+constructor TClienteController.Create;
+begin
+  inherited;
+  repositorio := TClienteRepositorio.Create;
+end;
+
+function TClienteController.pegarPorCodigo(Codigo: Integer): TCliente;
+var
+  criterio : TCriterio;
+begin
+  try
+    criterio := TCriterio.Criar;
+    criterio.addCondicao(CAMPO_CODIGO,'=',Codigo.ToString);
+
+    Result := TCliente.Create;
+    with Self.repositorio.listar(criterio) do
+      begin
+        if not IsEmpty then
+          begin
+            Result.Codigo := FieldByName(CAMPO_CODIGO).AsInteger;
+            Result.Nome := FieldByName(CAMPO_NOME).AsString;
+            Result.Cidade := FieldByName(CAMPO_CIDADE).AsString;
+            Result.UF := FieldByName(CAMPO_UF).AsString;
+          end
+        else
+          begin
+            Result.Codigo := SEM_REGISTRO;
+            Result.Nome := VAZIO;
+            Result.Cidade := VAZIO;
+            Result.UF := VAZIO;
+          end;
+      end;
+  finally
+    FreeAndNil(criterio);
   end;
 end;
 
